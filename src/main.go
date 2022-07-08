@@ -2,42 +2,19 @@ package main
 
 import (
 	"errors"
+	"example/demo_crud/src/database"
+	"example/demo_crud/src/helper"
+	"example/demo_crud/src/models"
+	"fmt"
 	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
+	"github.com/joho/godotenv"
 	"net/http"
 )
 
-type Book struct {
-	ID       string `json:"id"`
-	Title    string `json:"title"`
-	Author   string `json:"author"`
-	Quantity int    `json:"quantity"`
-}
-
-type BookForm struct {
-	Title    string `json:"title"`
-	Author   string `json:"author"`
-	Quantity int    `json:"quantity"`
-}
-
-func NewBook(title string, author string, quantity int) *Book {
-	book := &Book{
-		uuid.New().String(),
-		title,
-		author,
-		quantity,
-	}
-	return book
-}
-
-var books = []Book{
-	*NewBook("In Search of Lost Time", "Marcel Proust", 2),
-	*NewBook("The Great Gatsby", "F. Scott Fitzgerald", 5),
-	*NewBook("War and Peace", "Leo Tolstoy", 6),
-}
-
 func findAllBooks(ctx *gin.Context) {
-	ctx.IndentedJSON(http.StatusOK, books)
+	var books []models.Book
+	database.DBInstance.Find(&books)
+	ctx.JSON(http.StatusOK, &books)
 }
 
 func findBookById(ctx *gin.Context) {
@@ -53,29 +30,55 @@ func findBookById(ctx *gin.Context) {
 }
 
 func createBook(ctx *gin.Context) {
-	var newBookForm BookForm
-	if err := ctx.BindJSON(&newBookForm); err != nil {
+	var newBook models.Book
+	if err := ctx.BindJSON(&newBook); err != nil {
 		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
-			"message": "missing data",
+			"error": "missing data",
 		})
 		return
 	}
-	newBook := *NewBook(newBookForm.Title, newBookForm.Author, newBookForm.Quantity)
-	books = append(books, newBook)
+	if ok, err := helper.Validate(newBook); !ok {
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
+			"error": err,
+		})
+		return
+	}
+	if rs := database.DBInstance.Create(&newBook); rs.Error != nil {
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
+			"error": rs.Error.Error(),
+		})
+		return
+	}
 	ctx.IndentedJSON(http.StatusOK, newBook)
 }
 
-func getBookById(id string) (*Book, error) {
-	for _, book := range books {
-		if book.ID == id {
-			return &book, nil
-		}
-	}
+func getBookById(id string) (*models.Book, error) {
+	//for _, book := range books {
+	//	if book.ID == id {
+	//		return &book, nil
+	//	}
+	//}
 	return nil, errors.New("book not found")
 }
 
 func main() {
+	// load .env
+	err := godotenv.Load()
+	if err != nil {
+		fmt.Println("Error loading .env file")
+	}
+
+	// connect to db
+	db := database.ConnectDB()
+	fmt.Println(db)
+
 	router := gin.Default()
+	router.GET("/initDB", func(ctx *gin.Context) {
+		database.MigrateDB()
+		ctx.JSON(http.StatusOK, gin.H{
+			"status": "OK",
+		})
+	})
 	router.GET("/books", findAllBooks)
 	router.GET("/book/:id", findBookById)
 	router.POST("/new-book", createBook)

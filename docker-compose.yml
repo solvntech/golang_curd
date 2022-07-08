@@ -1,16 +1,14 @@
 version: '3.8'
 services:
-    db:
-        container_name: db
+    postgres:
+        container_name: postgres
         image: postgres:14.1-alpine
-        restart: always
-        environment:
-            - POSTGRES_USER=admin
-            - POSTGRES_PASSWORD=admin
+        restart: unless-stopped
         ports:
-            - '5432:5432'
+            - '${POSTGRES_PORT}:${POSTGRES_PORT}'
         volumes:
-            - db:/var/lib/postgresql/data
+            - postgres:/data/postgres
+        env_file:
+            - .env
 volumes:
-    db:
-        driver: local
+    postgres:
