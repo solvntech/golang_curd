@@ -24,7 +24,7 @@ Example:
 ```.dotenv
 POSTGRES_USER=postgres
 POSTGRES_PASSWORD=your_db_pass
-POSTGRES_DB_HOST=<localhost
+POSTGRES_DB_HOST=localhost
 POSTGRES_PORT=5432
 POSTGRES_DB=db_name
 ```
@@ -33,4 +33,20 @@ POSTGRES_DB=db_name
 
 ```
 $ docker compose up -d
+```
+
+### Install dev environment and run project
+
+```
+# install live host server at global
+
+$ go install github.com/cosmtrek/air@latest
+
+# install dependencies
+
+$ go mod download
+
+# run project
+
+$ air
 ```
