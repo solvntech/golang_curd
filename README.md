@@ -44,9 +44,11 @@ $ go install github.com/cosmtrek/air@latest
 
 # install dependencies
 
-$ go mod download
+$ go mod download && go mod tidy
 
 # run project
 
 $ air
 ```
+
+![Screenshot](images/img.png)
