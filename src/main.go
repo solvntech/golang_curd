@@ -1,65 +1,21 @@
 package main
 
 import (
-	"errors"
+	"example/demo_crud/src/controllers"
 	"example/demo_crud/src/database"
-	"example/demo_crud/src/helper"
-	"example/demo_crud/src/models"
+	"example/demo_crud/src/services"
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
+	"gorm.io/gorm"
 	"net/http"
 )
 
-func findAllBooks(ctx *gin.Context) {
-	var books []models.Book
-	database.DBInstance.Find(&books)
-	ctx.JSON(http.StatusOK, &books)
-}
-
-func findBookById(ctx *gin.Context) {
-	id := ctx.Param("id")
-	book, err := getBookById(id)
-	if err != nil {
-		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
-			"error": err.Error(),
-		})
-		return
-	}
-	ctx.IndentedJSON(http.StatusOK, book)
-}
-
-func createBook(ctx *gin.Context) {
-	var newBook models.Book
-	if err := ctx.BindJSON(&newBook); err != nil {
-		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
-			"error": "missing data",
-		})
-		return
-	}
-	if ok, err := helper.Validate(newBook); !ok {
-		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
-			"error": err,
-		})
-		return
-	}
-	if rs := database.DBInstance.Create(&newBook); rs.Error != nil {
-		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
-			"error": rs.Error.Error(),
-		})
-		return
-	}
-	ctx.IndentedJSON(http.StatusOK, newBook)
-}
-
-func getBookById(id string) (*models.Book, error) {
-	//for _, book := range books {
-	//	if book.ID == id {
-	//		return &book, nil
-	//	}
-	//}
-	return nil, errors.New("book not found")
-}
+var (
+	DB             *gorm.DB
+	bookService    services.IBookService
+	bookController controllers.IBookController
+)
 
 func main() {
 	// load .env
@@ -69,8 +25,9 @@ func main() {
 	}
 
 	// connect to db
-	db := database.ConnectDB()
-	fmt.Println(db)
+	DB = database.ConnectDB()
+	bookService = services.NewBookService(DB)
+	bookController = controllers.NewBookController(bookService)
 
 	router := gin.Default()
 	router.GET("/initDB", func(ctx *gin.Context) {
@@ -79,8 +36,8 @@ func main() {
 			"status": "OK",
 		})
 	})
-	router.GET("/books", findAllBooks)
-	router.GET("/book/:id", findBookById)
-	router.POST("/new-book", createBook)
+	router.GET("/books", bookController.FindAll)
+	router.GET("/book/:id", bookController.FindById)
+	router.POST("/new-book", bookController.Create)
 	router.Run(":3000")
 }

@@ -10,5 +10,11 @@ services:
             - postgres:/data/postgres
         env_file:
             - .env
+    api:
+        container_name: api
+        build: ./
+        volumes:
+            - .:/app
 volumes:
     postgres:
+    api:
