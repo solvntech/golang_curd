@@ -10,7 +10,7 @@ type IBookService interface {
 	GetBook(id string) (*models.Book, error)
 	GetAll() *[]models.Book
 	UpdateBook(book *models.Book) (*models.Book, error)
-	DeleteBook(id *string) (*models.Book, error)
+	DeleteBook(id string) (*models.Book, error)
 }
 
 type BookService struct {
@@ -36,12 +36,20 @@ func (bookService *BookService) GetBook(id string) (*models.Book, error) {
 }
 
 func (bookService *BookService) UpdateBook(book *models.Book) (*models.Book, error) {
-	return nil, nil
+	if rs := bookService.DB.Where("id = ?", book.ID).First(&book); rs.Error != nil {
+		return nil, rs.Error
+	}
+	bookService.DB.Updates(book)
+	return book, nil
 }
 
-func (bookService *BookService) DeleteBook(id *string) (*models.Book, error) {
-	//TODO implement me
-	panic("implement me")
+func (bookService *BookService) DeleteBook(id string) (*models.Book, error) {
+	var book *models.Book
+	if rs := bookService.DB.Where("id = ?", id).First(&book); rs.Error != nil {
+		return nil, rs.Error
+	}
+	bookService.DB.Delete(book)
+	return book, nil
 }
 
 func (bookService *BookService) CreateBook(book *models.Book) (*models.Book, error) {

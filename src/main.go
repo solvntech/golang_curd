@@ -30,6 +30,7 @@ func main() {
 	bookController = controllers.NewBookController(bookService)
 
 	router := gin.Default()
+	router.SetTrustedProxies([]string{"127.0.0.1"})
 	router.GET("/initDB", func(ctx *gin.Context) {
 		database.MigrateDB()
 		ctx.JSON(http.StatusOK, gin.H{
@@ -39,5 +40,7 @@ func main() {
 	router.GET("/books", bookController.FindAll)
 	router.GET("/book/:id", bookController.FindById)
 	router.POST("/new-book", bookController.Create)
+	router.POST("/update-book", bookController.Update)
+	router.DELETE("/delete-book/:id", bookController.Delete)
 	router.Run(":3000")
 }

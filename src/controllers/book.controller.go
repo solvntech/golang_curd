@@ -12,6 +12,8 @@ type IBookController interface {
 	FindAll(context *gin.Context)
 	FindById(context *gin.Context)
 	Create(context *gin.Context)
+	Update(context *gin.Context)
+	Delete(context *gin.Context)
 }
 
 type BookController struct {
@@ -55,6 +57,42 @@ func (bookController BookController) Create(ctx *gin.Context) {
 		return
 	}
 	book, err := bookController.bookService.CreateBook(&newBook)
+	if err != nil {
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+	ctx.IndentedJSON(http.StatusOK, book)
+}
+
+func (bookController BookController) Update(ctx *gin.Context) {
+	var newBook models.Book
+	if err := ctx.BindJSON(&newBook); err != nil {
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
+			"error": "missing data",
+		})
+		return
+	}
+	if ok, err := helper.Validate(newBook); !ok {
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
+			"error": err,
+		})
+		return
+	}
+	book, err := bookController.bookService.UpdateBook(&newBook)
+	if err != nil {
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+	ctx.IndentedJSON(http.StatusOK, book)
+}
+
+func (bookController BookController) Delete(ctx *gin.Context) {
+	id := ctx.Param("id")
+	book, err := bookController.bookService.DeleteBook(id)
 	if err != nil {
 		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
 			"error": err.Error(),
